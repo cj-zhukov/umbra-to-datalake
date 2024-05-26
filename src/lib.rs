@@ -2,7 +2,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub type Error = Box<dyn std::error::Error>;
 
 use std::collections::HashMap;
-use std::io::Write;
 use std::sync::Arc;
 
 use datafusion::arrow::array::{RecordBatch, StringArray, Float64Array};
@@ -12,6 +11,7 @@ use parquet::arrow::AsyncArrowWriter;
 use serde::Deserialize;
 use serde_json::Value;
 use tokio::fs;
+use tokio::io::AsyncWriteExt;
 use tokio_stream::StreamExt;
 
 #[derive(Deserialize, Debug)]
@@ -109,8 +109,8 @@ pub async fn write_to_file(df: DataFrame, file_path: &str) -> Result<()> {
         writer.write(&batch).await?;
     }
     writer.close().await?;
-    let mut file = std::fs::File::create(file_path)?;
-    file.write_all(&buf)?;
+    let mut file = fs::File::create(file_path).await?;
+    file.write_all(&buf).await?;
 
     Ok(())
 }
